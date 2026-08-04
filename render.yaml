@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: celeb-quiz-public
+    runtime: node
+    rootDir: work/result-template
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: DATA_DIR
+        value: /var/data
+    disk:
+      name: celeb-quiz-data
+      mountPath: /var/data
+      sizeGB: 1
