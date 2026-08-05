@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>你跟哪个名人有缘</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="ambient ambient--left" aria-hidden="true"></div>
+  <div class="ambient ambient--right" aria-hidden="true"></div>
+
+  <header class="progress-ribbon" aria-label="测试进度">
+    <div class="progress-ribbon__inner">
+      <span id="progress-stage">准备开始</span>
+      <span id="progress-count">0%</span>
+    </div>
+    <div class="progress-ribbon__track">
+      <span class="progress-ribbon__fill" id="progress-fill"></span>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="app-frame">
+      <section class="screen is-active" data-screen="cover" aria-labelledby="cover-title">
+        <div class="stage-card stage-card--hero">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <p class="section-kicker">原创测试</p>
+              <h1 id="cover-title">你最像哪个名人</h1>
+              <p class="result-lead">
+                有些人只是名字听过，有些人却会在做事方式、情绪反应和关系节奏上，
+                和你像得出奇。这份测试会从你的日常选择、压力反应和相处习惯出发，
+                帮你匹配出那位最像你的名人原型。
+              </p>
+              <div class="hero-actions">
+                <button class="primary-button primary-button--hero" id="cover-start" type="button">开始测试</button>
+              </div>
+              <p class="helper-text" id="cover-helper">
+                结果页可以传播，但如果别人想自己测试，仍然必须输入新的有效密码。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="password" aria-labelledby="password-title">
+        <div class="stage-card stage-card--narrow">
+          <p class="section-kicker">测试入口</p>
+          <h2 id="password-title">输入密码，开始这次匹配</h2>
+          <p class="stage-copy" id="password-copy">
+            这次测试采用一次性密码进入。首次验证成功后，会默认绑定当前设备；
+            中途退出也可以在同一浏览器继续。只有看到结果页后，这个密码才会正式作废。
+          </p>
+
+          <label class="field-label" for="password-input">输入测试密码</label>
+          <div class="password-row">
+            <input class="text-input" id="password-input" type="text" inputmode="text" autocomplete="off" placeholder="输入测试密码">
+            <button class="primary-button" id="password-submit" type="button">验证并进入</button>
+          </div>
+
+          <p class="status-note" id="password-status"></p>
+
+          <div class="footer-actions">
+            <button class="secondary-button" id="password-back" type="button">返回首页</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="mode" aria-labelledby="mode-title">
+        <div class="stage-card">
+          <p class="section-kicker">选择方向</p>
+          <h2 id="mode-title">先选这次想看的名人方向</h2>
+          <p class="stage-copy">
+            题目内容完全一样，区别只在最终结果的人物池。你可以只看男性名人、只看女性名人，
+            或者把最后的命中交给随机。
+          </p>
+
+          <div class="mode-grid">
+            <button class="mode-card" data-mode="male" type="button">
+              <span class="mode-card__tag">方向一</span>
+              <strong>匹配男性名人</strong>
+              <p>适合想看看自己更像哪一位男性人物原型，结果只会从男性池里命中。</p>
+            </button>
+
+            <button class="mode-card" data-mode="female" type="button">
+              <span class="mode-card__tag">方向二</span>
+              <strong>匹配女性名人</strong>
+              <p>适合想看看自己更像哪一位女性人物原型，结果只会从女性池里命中。</p>
+            </button>
+
+            <button class="mode-card" data-mode="random" type="button">
+              <span class="mode-card__tag">方向三</span>
+              <strong>随机匹配名人</strong>
+              <p>适合想保留一点惊喜感，让系统从这一型的完整人物池里替你命中结果。</p>
+            </button>
+          </div>
+
+          <div class="footer-actions">
+            <button class="secondary-button" id="mode-back" type="button">返回上一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="quiz" aria-labelledby="quiz-title">
+        <div class="stage-card">
+          <div class="quiz-head">
+            <div>
+              <p class="section-kicker" id="quiz-module">初步了解</p>
+              <h2 id="quiz-title">题目加载中</h2>
+            </div>
+            <p class="quiz-progress-text" id="quiz-progress-text">第1题 / 共24题</p>
+          </div>
+
+          <div class="question-card">
+            <p class="question-text" id="question-text"></p>
+            <div class="option-list" id="option-list"></div>
+          </div>
+
+          <div class="quiz-footer">
+            <button class="secondary-button" id="quiz-prev" type="button">上一题</button>
+            <p class="helper-text" id="quiz-hint">按第一直觉选最像你的那个就好，这里没有标准答案。</p>
+            <button class="primary-button" id="quiz-next" type="button">下一题</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="result" aria-labelledby="result-title">
+        <section class="result-card">
+          <div class="result-card__intro">
+            <span class="result-badge">结果已生成</span>
+            <p class="result-kicker">你跟哪个名人有缘</p>
+            <h1 id="result-title">你的名人原型</h1>
+            <p class="result-lead" id="archetype-note"></p>
+          </div>
+
+          <div class="hero-grid hero-grid--result">
+            <section class="score-card" aria-label="相似指数">
+              <p class="score-card__label">相似指数</p>
+              <div class="score-card__number" id="similarity">92%</div>
+              <p class="score-card__caption" id="score-caption"></p>
+              <div class="score-card__orbit" aria-hidden="true">
+                <span></span>
+                <span></span>
+              </div>
+            </section>
+
+            <section class="identity-card" aria-label="对应名人信息">
+              <p class="section-kicker">对应人物</p>
+              <h2 id="person-name"></h2>
+              <p class="identity-card__summary" id="share-blurb"></p>
+              <div class="keyword-list" id="keyword-list"></div>
+            </section>
+          </div>
+
+          <section class="ability-board" aria-labelledby="ability-title">
+            <div class="ability-board__head">
+              <div>
+                <p class="section-kicker">能力结构</p>
+                <h2 id="ability-title">你的做事方式五维图</h2>
+              </div>
+              <p class="ability-board__desc">
+                这一块更像把你的做事气质拆开看，方便解释你为什么会像这个人物。
+              </p>
+            </div>
+
+            <div class="ability-board__grid">
+              <div class="radar-card">
+                <svg class="radar-chart" id="radar-chart" viewBox="0 0 420 360" aria-label="能力结构五维图">
+                  <g id="radar-grid"></g>
+                  <g id="radar-axis"></g>
+                  <polygon id="radar-shape" points=""></polygon>
+                  <g id="radar-points"></g>
+                </svg>
+              </div>
+
+              <div class="ability-legend" id="ability-legend"></div>
+            </div>
+          </section>
+
+          <div class="content-grid">
+            <article class="panel">
+              <div class="panel__head">
+                <span>01</span>
+                <h3>为什么像 TA</h3>
+              </div>
+              <p id="why-like"></p>
+            </article>
+
+            <article class="panel">
+              <div class="panel__head">
+                <span>02</span>
+                <h3>任务小传总结</h3>
+              </div>
+              <p id="profile-summary"></p>
+            </article>
+
+            <article class="panel">
+              <div class="panel__head">
+                <span>03</span>
+                <h3>当下表现</h3>
+              </div>
+              <p id="current-performance"></p>
+            </article>
+
+            <article class="panel">
+              <div class="panel__head">
+                <span>04</span>
+                <h3>当前状态</h3>
+              </div>
+              <p id="current-state"></p>
+            </article>
+
+            <article class="panel panel--wide">
+              <div class="panel__head">
+                <span>05</span>
+                <h3>人生建议</h3>
+              </div>
+              <p id="life-advice"></p>
+            </article>
+          </div>
+
+          <section class="share-zone" aria-label="分享与跳转">
+            <div class="share-zone__copy">
+              <div class="share-zone__ornament" aria-hidden="true">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <p class="section-kicker">写在最后</p>
+              <h3 class="share-zone__title">这一页可以分享，但他人只能看到你的最终结果。</h3>
+              <p class="share-zone__body">
+                如果对方想自己测试，仍然必须重新输入一个新的有效密码，不能从你的结果页直接进入测试。
+              </p>
+              <div class="share-zone__closing-line" aria-hidden="true"></div>
+            </div>
+
+            <div class="share-zone__actions">
+              <button class="action-button action-button--primary" id="share-copy" type="button">复制分享文案</button>
+              <button class="action-button" id="share-poster" type="button">生成分享图位</button>
+              <button class="action-button" id="share-restart" type="button">回到密码入口</button>
+            </div>
+          </section>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./data.js"></script>
+  <script src="./deployment-config.js"></script>
+  <script src="./password-store.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

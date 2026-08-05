@@ -1,0 +1,13 @@
+{
+  "name": "celeb-quiz-public",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Public deployment for the celebrity archetype quiz",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  }
+}
