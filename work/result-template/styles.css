@@ -1021,6 +1021,38 @@ h2 {
   gap: 1.1rem;
 }
 
+.admin-auth-card {
+  align-content: start;
+}
+
+.admin-badge-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.admin-auth-card__email {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.18rem;
+  color: var(--accent-deep);
+  line-height: 1.5;
+}
+
+.setup-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.72rem;
+  color: var(--ink-soft);
+  line-height: 1.8;
+}
+
+.setup-list li {
+  padding-left: 0.1rem;
+}
+
 .admin-panel__head {
   display: flex;
   justify-content: space-between;

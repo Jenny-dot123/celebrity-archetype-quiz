@@ -1,4 +1,4 @@
-const passwordService = window.CELEB_QUIZ_PASSWORDS;
+import * as passwordService from "./password-store.js";
 const STORAGE_KEYS = passwordService.STORAGE_KEYS;
 
 const SHARE_QUERY_KEY = "share";
@@ -24,6 +24,7 @@ const elements = {
   progressFill: document.getElementById("progress-fill"),
   coverStart: document.getElementById("cover-start"),
   coverHelper: document.getElementById("cover-helper"),
+  passwordCopy: document.getElementById("password-copy"),
   passwordInput: document.getElementById("password-input"),
   passwordSubmit: document.getElementById("password-submit"),
   passwordBack: document.getElementById("password-back"),
@@ -261,7 +262,13 @@ function renderCover() {
       elements.coverStart.textContent = "输入新密码开始测试";
       elements.coverHelper.textContent = `上一次命中结果是「${session.resultSnapshot.personName}」。如果想再测一次，仍然需要新的有效密码。`;
       return;
-    }
+  }
+
+  if (!passwordService.isRemoteMode()) {
+    elements.coverStart.textContent = "开始测试";
+    elements.coverHelper.textContent = "这是免费静态版：结果页可以分享，但测试密码只在当前浏览器有效，更适合你自己演示或试跑流程。";
+    return;
+  }
 
   elements.coverStart.textContent = "开始测试";
   elements.coverHelper.textContent = "结果页可以传播，但如果别人想自己测试，仍然必须输入新的有效密码。";
@@ -272,10 +279,16 @@ function renderPassword() {
     return;
   }
 
+  if (!passwordService.isRemoteMode()) {
+    elements.passwordCopy.textContent = "免费版说明：请先在同一浏览器的密码管理页生成密码，再回到这里输入。这个密码不能发给别的设备直接使用。";
+  } else {
+    elements.passwordCopy.textContent = "这次测试采用一次性密码进入。首次验证成功后，会默认绑定当前设备；中途退出也可以在同一浏览器继续。只有看到结果页后，这个密码才会正式作废。";
+  }
+
   state.passwordStore = initPasswordStore();
 
   if (!passwordService.isRemoteMode() && !Object.keys(state.passwordStore).length) {
-    elements.passwordStatus.textContent = "当前还没有可用密码。请先在密码管理页生成一个新的测试密码。";
+    elements.passwordStatus.textContent = "当前浏览器还没有可用密码。请先打开 password-admin.html 生成一个新密码，再回来输入。";
     return;
   }
 

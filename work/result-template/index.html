@@ -48,7 +48,7 @@
         <div class="stage-card stage-card--narrow">
           <p class="section-kicker">测试入口</p>
           <h2 id="password-title">输入密码，开始这次匹配</h2>
-          <p class="stage-copy">
+          <p class="stage-copy" id="password-copy">
             这次测试采用一次性密码进入。首次验证成功后，会默认绑定当前设备；
             中途退出也可以在同一浏览器继续。只有看到结果页后，这个密码才会正式作废。
           </p>
@@ -249,7 +249,8 @@
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script src="./data.js"></script>
-  <script src="./password-store.js"></script>
-  <script src="./app.js"></script>
+  <script src="./deployment-config.js"></script>
+  <script src="./supabase-app-config.js"></script>
+  <script type="module" src="./app.js"></script>
 </body>
 </html>
