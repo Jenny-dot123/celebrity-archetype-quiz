@@ -39,10 +39,12 @@ const elements = {
 
 const state = {
   entries: [],
+  latestEntry: null,
   currentUser: null,
   isAdmin: false,
   adminClaimed: false,
   claimedByCurrentUser: false,
+  isGenerating: false,
   toastTimer: null
 };
 
@@ -235,7 +237,7 @@ async function handleClaimAdmin() {
   try {
     await passwordService.claimAdminAccess();
     const adminStatus = await getAdminStatus();
-    applyAdminStatus(adminStatus);
+    applyAdminStatus(state.currentUser, adminStatus);
     renderAuthCard();
     await refreshEntries();
     showToast("管理员身份领取成功");
@@ -249,17 +251,31 @@ function handleDoNotSignOut() {
 }
 
 async function handleGeneratePassword() {
+  if (state.isGenerating) {
+    return;
+  }
+
+  state.isGenerating = true;
+  elements.generatePassword.disabled = true;
+
   try {
     const result = await passwordService.addGeneratedPassword();
-    await refreshEntries();
+    state.latestEntry = result;
+    await refreshEntries(result.code);
     showToast(`已生成新密码：${result.code}`);
   } catch (error) {
     showToast(getFriendlyError(error, "生成密码失败，请稍后再试。"));
+  } finally {
+    state.isGenerating = false;
+
+    if (!passwordService.isRemoteMode() || state.isAdmin) {
+      elements.generatePassword.disabled = false;
+    }
   }
 }
 
 async function handleCopyLatestPassword() {
-  const latestEntry = state.entries[0] || null;
+  const latestEntry = state.latestEntry || state.entries[0] || null;
 
   if (!latestEntry) {
     showToast("请先生成一个新密码");
@@ -270,7 +286,7 @@ async function handleCopyLatestPassword() {
 }
 
 async function handleCopySendText() {
-  const latestEntry = state.entries[0] || null;
+  const latestEntry = state.latestEntry || state.entries[0] || null;
 
   if (!latestEntry) {
     showToast("请先生成一个新密码");
@@ -294,14 +310,18 @@ async function handleCopySendText() {
   copyText(sendText, passwordService.isRemoteMode() ? "发送文案已复制" : "操作说明已复制");
 }
 
-async function refreshEntries() {
+async function refreshEntries(preferredCode = "") {
   try {
     state.entries = await passwordService.getPasswordEntries();
-    renderLatest(state.entries[0] || null);
+    const normalizedPreferredCode = passwordService.normalizePassword(preferredCode);
+    state.latestEntry = normalizedPreferredCode
+      ? state.entries.find((entry) => entry.code === normalizedPreferredCode) || state.latestEntry
+      : state.entries[0] || null;
+    renderLatest(state.latestEntry || state.entries[0] || null);
     renderStats(state.entries);
     renderList(state.entries);
   } catch (error) {
-    renderLatest(null);
+    renderLatest(state.latestEntry || state.entries[0] || null);
     renderStats([]);
     elements.passwordList.innerHTML = `
       <div class="password-empty">
