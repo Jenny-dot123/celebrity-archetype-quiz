@@ -559,6 +559,10 @@ h2 {
   text-align: center;
 }
 
+.quiz-footer [hidden] {
+  display: none;
+}
+
 .result-card__intro {
   max-width: 48rem;
 }
