@@ -107,6 +107,21 @@ export function normalizePassword(value) {
   return String(value || "").trim().toUpperCase();
 }
 
+function normalizeTimestamp(value) {
+  if (value === null || value === undefined || value === "") {
+    return 0;
+  }
+
+  const numericValue = Number(value);
+
+  if (Number.isFinite(numericValue)) {
+    return numericValue;
+  }
+
+  const parsedValue = Date.parse(String(value));
+  return Number.isNaN(parsedValue) ? 0 : parsedValue;
+}
+
 export function normalizeRecord(record) {
   const nextRecord = record && typeof record === "object" ? record : {};
   const nextStatus = ["unused", "active", "used"].includes(nextRecord.status)
@@ -116,9 +131,9 @@ export function normalizeRecord(record) {
   return {
     status: nextStatus,
     authUid: nextRecord.authUid || nextRecord.auth_uid || "",
-    usedAt: Number(nextRecord.usedAt || nextRecord.used_at || 0),
-    activatedAt: Number(nextRecord.activatedAt || nextRecord.activated_at || 0),
-    createdAt: Number(nextRecord.createdAt || nextRecord.created_at || 0),
+    usedAt: normalizeTimestamp(nextRecord.usedAt || nextRecord.used_at),
+    activatedAt: normalizeTimestamp(nextRecord.activatedAt || nextRecord.activated_at),
+    createdAt: normalizeTimestamp(nextRecord.createdAt || nextRecord.created_at),
     createdBy: nextRecord.createdBy || nextRecord.created_by || "",
     source: nextRecord.source || "generated"
   };
@@ -188,13 +203,18 @@ function localGeneratePassword() {
   const store = initPasswordStore();
   const code = generatePasswordCode(store);
   const deviceId = localStorage.getItem(STORAGE_KEYS.deviceId) || "";
+  const latestCreatedAt = Object.values(store).reduce(
+    (latest, record) => Math.max(latest, normalizeRecord(record).createdAt),
+    0
+  );
+  const createdAt = Math.max(Date.now(), latestCreatedAt + 1);
 
   store[code] = {
     status: "unused",
     authUid: "",
     usedAt: 0,
     activatedAt: 0,
-    createdAt: Date.now(),
+    createdAt,
     createdBy: deviceId || "local",
     source: "generated"
   };
