@@ -316,17 +316,21 @@ function renderQuiz() {
 
   const selectedOptionId = state.session?.answers?.[question.question_id] || null;
   const options = state.data.optionsByQuestion[question.question_id] || [];
+  const isLastQuestion = getCurrentQuestionIndex() === state.data.questions.length - 1;
 
   elements.quizModule.textContent = question.module_name;
   elements.quizTitle.textContent = question.progress_label;
   elements.quizProgressText.textContent = question.progress_label;
   elements.questionText.textContent = question.question_text;
-  elements.quizPrev.disabled = getCurrentQuestionIndex() === 0;
+  elements.quizPrev.hidden = getCurrentQuestionIndex() === 0;
+  elements.quizNext.hidden = !isLastQuestion;
   elements.quizNext.disabled = !selectedOptionId;
-    elements.quizNext.textContent = getCurrentQuestionIndex() === state.data.questions.length - 1 ? "提交并看结果" : "下一题";
-    elements.quizHint.textContent = selectedOptionId
-      ? "已记录当前选择，如果你想改，也可以返回上一题重新选。"
-      : "按第一直觉选最像你的那个就好，这里没有标准答案。";
+  elements.quizNext.textContent = "查看结果";
+  elements.quizHint.textContent = selectedOptionId
+    ? (isLastQuestion
+      ? "已记录最后一题，确认无误后点击“查看结果”。"
+      : "已记录，正在进入下一题。")
+    : "按第一直觉选最像你的那个就好，这里没有标准答案。";
 
   elements.optionList.innerHTML = options.map((option) => `
     <button class="option-card ${selectedOptionId === option.option_id ? "is-selected" : ""}" data-option-id="${option.option_id}" type="button">
@@ -337,7 +341,7 @@ function renderQuiz() {
 
   Array.from(elements.optionList.querySelectorAll(".option-card")).forEach((button) => {
     button.addEventListener("click", () => {
-      saveAnswer(question.question_id, button.dataset.optionId);
+      handleOptionSelection(question.question_id, button.dataset.optionId);
     });
   });
 }
@@ -513,6 +517,11 @@ function handleQuizPrev() {
 
 function handleQuizNext() {
   const question = state.data.questions[getCurrentQuestionIndex()];
+
+  if (getCurrentQuestionIndex() !== state.data.questions.length - 1) {
+    return;
+  }
+
   const selectedOptionId = state.session?.answers?.[question.question_id];
 
   if (!selectedOptionId) {
@@ -520,15 +529,8 @@ function handleQuizNext() {
     return;
   }
 
-  if (getCurrentQuestionIndex() === state.data.questions.length - 1) {
-    finalizeResult();
-    setScreen("result");
-    return;
-  }
-
-  state.session.currentQuestionIndex += 1;
-  persistSession();
-  render();
+  finalizeResult();
+  setScreen("result");
 }
 
 function handleShareCopy() {
@@ -579,7 +581,7 @@ function selectMode(mode) {
   setScreen("quiz");
 }
 
-function saveAnswer(questionId, optionId) {
+function handleOptionSelection(questionId, optionId) {
   if (!state.session) {
     return;
   }
@@ -587,6 +589,13 @@ function saveAnswer(questionId, optionId) {
   state.session.answers[questionId] = optionId;
   state.session.updatedAt = new Date().toISOString();
   persistSession();
+
+  if (getCurrentQuestionIndex() < state.data.questions.length - 1) {
+    state.session.currentQuestionIndex += 1;
+    state.session.updatedAt = new Date().toISOString();
+    persistSession();
+  }
+
   render();
 }
 
@@ -638,7 +647,7 @@ function buildResultSnapshot() {
     personName: resultConfig.person_name,
     resultTitle: resultConfig.result_title,
     similarity,
-    scoreCaption: similarity >= 96 ? "极高命中区间" : similarity >= 91 ? "高命中区间" : "稳定命中区间",
+    scoreCaption: similarity >= 90 ? "极高命中区间" : similarity >= 75 ? "高命中区间" : "自然贴近区间",
     keywords,
     whyLike: resultConfig.why_like,
     profileSummary: `${resultConfig.profile_summary} 放到你身上，更像一种“${sharedSkeleton}”的任务气质。`,
@@ -824,7 +833,7 @@ function computeSimilarity(scores) {
   ];
 
   const average = margins.reduce((sum, item) => sum + item, 0) / margins.length;
-  return clamp(82 + Math.round(average * 16), 82, 98);
+  return clamp(50 + Math.round(average * 49), 50, 99);
 }
 
 function axisMargin(left, right) {
