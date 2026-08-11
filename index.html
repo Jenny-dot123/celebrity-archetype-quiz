@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>你跟哪个名人有缘</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="ambient ambient--left" aria-hidden="true"></div>
+  <div class="ambient ambient--right" aria-hidden="true"></div>
+
+  <header class="progress-ribbon" aria-label="测试进度">
+    <div class="progress-ribbon__inner">
+      <span id="progress-stage">准备开始</span>
+      <span id="progress-count">0%</span>
+    </div>
+    <div class="progress-ribbon__track">
+      <span class="progress-ribbon__fill" id="progress-fill"></span>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="app-frame">
+      <section class="screen is-active" data-screen="cover" aria-labelledby="cover-title">
+        <div class="stage-card stage-card--hero">
+          <div class="hero-grid">
+            <div class="hero-copy">
+              <p class="section-kicker">原创测试</p>
+              <h1 id="cover-title">你最像哪个名人</h1>
+              <p class="result-lead">
+                有些人只是名字听过，有些人却会在做事方式、情绪反应和关系节奏上，
+                和你像得出奇。这份测试会从你的日常选择、压力反应和相处习惯出发，
+                帮你匹配出那位最像你的名人原型。
+              </p>
+              <div class="hero-actions">
+                <button class="primary-button primary-button--hero" id="cover-start" type="button">开始测试</button>
+              </div>
+              <p class="helper-text" id="cover-helper">
+                结果页可以传播，但如果别人想自己测试，仍然必须输入新的有效密码。
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="password" aria-labelledby="password-title">
+        <div class="stage-card stage-card--narrow">
+          <p class="section-kicker">测试入口</p>
+          <h2 id="password-title">输入密码，开始这次匹配</h2>
+          <p class="stage-copy" id="password-copy">
+            这次测试采用一次性密码进入。首次验证成功后，会默认绑定当前设备；
+            中途退出也可以在同一浏览器继续。只有看到结果页后，这个密码才会正式作废。
+          </p>
+
+          <label class="field-label" for="password-input">输入测试密码</label>
+          <div class="password-row">
+            <input class="text-input" id="password-input" type="text" inputmode="text" autocomplete="off" placeholder="输入测试密码">
+            <button class="primary-button" id="password-submit" type="button">验证并进入</button>
+          </div>
+
+          <p class="status-note" id="password-status"></p>
+
+          <div class="footer-actions">
+            <button class="secondary-button" id="password-back" type="button">返回首页</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="mode" aria-labelledby="mode-title">
+        <div class="stage-card">
+          <p class="section-kicker">选择方向</p>
+          <h2 id="mode-title">请选择测试方向</h2>
+
+          <div class="mode-grid">
+            <button class="mode-card" data-mode="male" type="button">
+              <strong>匹配男性名人</strong>
+            </button>
+
+            <button class="mode-card" data-mode="female" type="button">
+              <strong>匹配女性名人</strong>
+            </button>
+
+            <button class="mode-card" data-mode="random" type="button">
+              <strong>随机匹配名人</strong>
+            </button>
+          </div>
+
+          <div class="footer-actions">
+            <button class="secondary-button" id="mode-back" type="button">返回上一页</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="quiz" aria-labelledby="quiz-title">
+        <div class="stage-card">
+          <div class="quiz-head">
+            <div>
+              <p class="section-kicker" id="quiz-module">初步了解</p>
+              <h2 id="quiz-title">题目加载中</h2>
+            </div>
+            <p class="quiz-progress-text" id="quiz-progress-text">第1题 / 共24题</p>
+          </div>
+
+          <div class="question-card">
+            <p class="question-text" id="question-text"></p>
+            <div class="option-list" id="option-list"></div>
+          </div>
+
+          <div class="quiz-footer">
+            <button class="secondary-button" id="quiz-prev" type="button">上一题</button>
+            <p class="helper-text" id="quiz-hint">按第一直觉选最像你的那个就好，这里没有标准答案。</p>
+            <button class="primary-button" id="quiz-next" type="button">查看结果</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen result-screen" data-screen="result" aria-labelledby="result-title">
+        <article class="result-report">
+          <header class="report-cover">
+            <p class="report-cover__label">人物原型档案</p>
+            <h1 id="result-title">你的名人原型</h1>
+            <p class="report-cover__name" id="person-name"></p>
+            <p class="report-cover__note" id="archetype-note"></p>
+
+            <div class="report-match" aria-label="相似指数">
+              <div class="report-match__score" id="similarity">--%</div>
+              <div>
+                <p class="report-match__label">本次相似指数</p>
+                <p class="report-match__caption" id="score-caption"></p>
+              </div>
+            </div>
+
+            <p class="report-cover__method" id="share-blurb"></p>
+            <div class="keyword-list" id="keyword-list" aria-label="人物关键词"></div>
+          </header>
+
+          <section class="report-section" aria-labelledby="portrait-title">
+            <div class="report-section__head">
+              <span class="report-section__number">01</span>
+              <h2 id="portrait-title">人物画像</h2>
+            </div>
+            <div class="portrait-copy">
+              <p class="portrait-copy__lead" id="why-like"></p>
+              <div class="portrait-copy__divider" aria-hidden="true"></div>
+              <div>
+                <h3>人物小传总结</h3>
+                <p id="profile-summary"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="report-section" aria-labelledby="ability-title">
+            <div class="report-section__head">
+              <span class="report-section__number">02</span>
+              <h2 id="ability-title">能力结构</h2>
+            </div>
+
+            <div class="ability-spectrum">
+              <div class="ability-spectrum__chart">
+                <p class="ability-spectrum__title">你的五维行为光谱</p>
+                <svg class="radar-chart" id="radar-chart" viewBox="0 0 420 360" aria-label="能力结构五维图">
+                  <g id="radar-grid"></g>
+                  <g id="radar-axis"></g>
+                  <polygon id="radar-shape" points=""></polygon>
+                  <g id="radar-points"></g>
+                </svg>
+                <p class="ability-spectrum__summary" id="ability-summary"></p>
+              </div>
+
+              <div class="ability-list" id="ability-legend"></div>
+            </div>
+          </section>
+
+          <section class="report-section" aria-labelledby="evidence-title">
+            <div class="report-section__head">
+              <span class="report-section__number">03</span>
+              <h2 id="evidence-title">这次匹配的答案依据</h2>
+            </div>
+            <p class="report-section__intro">以下三处选择对人物匹配影响最大，它们分别反映了你的关系方式、压力反应或长期取向。</p>
+            <div class="evidence-list" id="evidence-list"></div>
+          </section>
+
+          <section class="report-section" aria-labelledby="reality-title">
+            <div class="report-section__head">
+              <span class="report-section__number">04</span>
+              <h2 id="reality-title">现实表现</h2>
+            </div>
+            <div class="reality-grid">
+              <article>
+                <h3>你通常如何做事</h3>
+                <p id="current-performance"></p>
+              </article>
+              <article>
+                <h3>你目前更需要留意什么</h3>
+                <p id="current-state"></p>
+              </article>
+            </div>
+          </section>
+
+          <section class="report-section" aria-labelledby="advice-title">
+            <div class="report-section__head">
+              <span class="report-section__number">05</span>
+              <h2 id="advice-title">人生建议</h2>
+            </div>
+            <div class="advice-list" id="advice-list"></div>
+            <p class="advice-summary" id="life-advice"></p>
+          </section>
+
+          <footer class="report-ending" aria-label="分享与测试说明">
+            <p class="report-ending__label">写在最后</p>
+            <h2>这一页可以分享，但他人只能看到你的最终结果。</h2>
+            <p>如果对方想自己测试，仍然必须重新输入一个新的有效密码，不能从你的结果页直接进入测试。</p>
+            <p class="report-ending__disclaimer">本测试用于人格原型探索与娱乐参考，不替代专业心理测评或心理诊断。</p>
+            <div class="report-ending__actions">
+              <button class="action-button action-button--primary" id="share-copy" type="button">复制结果与分享链接</button>
+              <button class="action-button" id="share-restart" type="button">回到密码入口</button>
+            </div>
+          </footer>
+        </article>
+      </section>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="./data.js"></script>
+  <script src="./deployment-config.js"></script>
+  <script src="./supabase-app-config.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
