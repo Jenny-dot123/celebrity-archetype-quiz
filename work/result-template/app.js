@@ -1,5 +1,5 @@
-import * as passwordService from "./password-store.js?v=20260811-release-c";
-import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260811-release-c";
+import * as passwordService from "./password-store.js?v=20260811-release-d";
+import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260811-release-d";
 const STORAGE_KEYS = passwordService.STORAGE_KEYS;
 
 const SHARE_QUERY_KEY = "share";
@@ -55,6 +55,7 @@ const elements = {
   abilitySummary: document.getElementById("ability-summary"),
   abilityLegend: document.getElementById("ability-legend"),
   evidenceList: document.getElementById("evidence-list"),
+  evidenceSection: document.getElementById("evidence-title")?.closest(".report-section"),
   adviceList: document.getElementById("advice-list"),
   radarGrid: document.getElementById("radar-grid"),
   radarAxis: document.getElementById("radar-axis"),
@@ -409,15 +410,12 @@ function renderAbilitySummary(abilities) {
 
 function renderEvidence(items) {
   if (!items.length) {
-    elements.evidenceList.innerHTML = `
-      <article class="evidence-item">
-        <p class="evidence-item__module">结果说明</p>
-        <h3>这份旧结果没有保存逐题依据</h3>
-        <p>重新完成测试后，这里会显示对人物匹配影响最大的三处选择。</p>
-      </article>
-    `;
+    elements.evidenceSection.hidden = true;
+    elements.evidenceList.innerHTML = "";
     return;
   }
+
+  elements.evidenceSection.hidden = false;
 
   elements.evidenceList.innerHTML = items.map((item, index) => `
     <article class="evidence-item">
@@ -687,7 +685,22 @@ function finalizeResult() {
 }
 
 function ensureResultSnapshot() {
-  if (!state.session?.resultSnapshot) {
+  if (!state.session) {
+    return null;
+  }
+
+  const snapshot = state.session.resultSnapshot;
+  const hasCompleteAnswers = state.data.questions.every((question) => (
+    Boolean(state.session.answers?.[question.question_id])
+  ));
+  const needsEvidenceUpgrade = !Array.isArray(snapshot?.evidenceItems)
+    || snapshot.evidenceItems.length < 3;
+
+  if ((!snapshot || needsEvidenceUpgrade) && hasCompleteAnswers && state.session.mode) {
+    state.session.resultSnapshot = buildResultSnapshot();
+    state.session.updatedAt = new Date().toISOString();
+    persistSession();
+  } else if (!snapshot) {
     finalizeResult();
   }
 

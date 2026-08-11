@@ -1,4 +1,4 @@
-import * as passwordService from "./password-store.js?v=20260811-release-c";
+import * as passwordService from "./password-store.js?v=20260811-release-d";
 import {
   ensureQuizAuthSession,
   getAdminStatus,
@@ -6,9 +6,9 @@ import {
   getSupabaseSetupMessage,
   isSupabaseConfigured,
   isSupabaseSupportedEnvironment
-} from "./supabase-service.js?v=20260811-release-c";
+} from "./supabase-service.js?v=20260811-release-d";
 
-const testEntryUrl = new URL("./index.html?v=20260811-release-c", window.location.href).toString();
+const testEntryUrl = new URL("./index.html?v=20260811-release-d", window.location.href).toString();
 
 const elements = {
   generatePassword: document.getElementById("generate-password"),
