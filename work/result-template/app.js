@@ -1,4 +1,5 @@
-import * as passwordService from "./password-store.js";
+import * as passwordService from "./password-store.js?v=20260811-release-b";
+import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260811-release-b";
 const STORAGE_KEYS = passwordService.STORAGE_KEYS;
 
 const SHARE_QUERY_KEY = "share";
@@ -51,13 +52,15 @@ const elements = {
   currentPerformance: document.getElementById("current-performance"),
   currentState: document.getElementById("current-state"),
   lifeAdvice: document.getElementById("life-advice"),
+  abilitySummary: document.getElementById("ability-summary"),
   abilityLegend: document.getElementById("ability-legend"),
+  evidenceList: document.getElementById("evidence-list"),
+  adviceList: document.getElementById("advice-list"),
   radarGrid: document.getElementById("radar-grid"),
   radarAxis: document.getElementById("radar-axis"),
   radarShape: document.getElementById("radar-shape"),
   radarPoints: document.getElementById("radar-points"),
   shareCopy: document.getElementById("share-copy"),
-  sharePoster: document.getElementById("share-poster"),
   shareRestart: document.getElementById("share-restart"),
   toast: document.getElementById("toast")
 };
@@ -103,7 +106,8 @@ function prepareData(rawData) {
     questions,
     optionsByQuestion,
     typesByMbti64,
-    resultsById
+    resultsById,
+    results: Object.values(resultsById)
   };
 }
 
@@ -163,7 +167,6 @@ function bindEvents() {
   });
 
   elements.shareCopy.addEventListener("click", handleShareCopy);
-  elements.sharePoster.addEventListener("click", () => showToast("这里可以继续接分享图生成接口"));
   elements.shareRestart.addEventListener("click", handleRestartFromResult);
 }
 
@@ -323,7 +326,7 @@ function renderQuiz() {
   elements.quizProgressText.textContent = question.progress_label;
   elements.questionText.textContent = question.question_text;
   elements.quizPrev.hidden = getCurrentQuestionIndex() === 0;
-  elements.quizNext.hidden = !isLastQuestion;
+  elements.quizNext.hidden = !isLastQuestion || !selectedOptionId;
   elements.quizNext.disabled = !selectedOptionId;
   elements.quizNext.textContent = "查看结果";
   elements.quizHint.textContent = selectedOptionId
@@ -367,23 +370,82 @@ function renderResult() {
   renderKeywords(snapshot.keywords);
   renderRadar(snapshot.abilities);
   renderAbilityLegend(snapshot.abilities);
+  renderAbilitySummary(snapshot.abilities);
+  renderEvidence(snapshot.evidenceItems || []);
+  renderAdvice(snapshot.adviceItems || [], snapshot.abilities);
 }
 
 function renderKeywords(keywords) {
   elements.keywordList.innerHTML = keywords
-    .map((keyword) => `<span class="keyword">${keyword}</span>`)
+    .map((keyword) => `<span>${escapeHtml(keyword)}</span>`)
     .join("");
 }
 
 function renderAbilityLegend(abilities) {
   elements.abilityLegend.innerHTML = abilities.map((ability, index) => `
-    <article class="ability-tile ability-tile--${ability.tone}">
-      <div class="ability-tile__top">
-        <span class="ability-tile__index">0${index + 1}</span>
-        <span class="ability-tile__value">${ability.value}%</span>
+    <article class="ability-row">
+      <div class="ability-row__head">
+        <span class="ability-row__index">0${index + 1}</span>
+        <h3>${escapeHtml(ability.label)}</h3>
+        <span class="ability-row__value">${Number(ability.value)}%</span>
       </div>
-      <h3>${ability.label}</h3>
-      <p>${ability.description}</p>
+      <p>${escapeHtml(ability.description)}</p>
+    </article>
+  `).join("");
+}
+
+function renderAbilitySummary(abilities) {
+  const ranked = [...abilities].sort((left, right) => Number(right.value) - Number(left.value));
+  const strongest = ranked[0];
+  const growth = ranked[ranked.length - 1];
+
+  if (!strongest || !growth) {
+    elements.abilitySummary.textContent = "五个维度共同构成你这次的行为结构。";
+    return;
+  }
+
+  elements.abilitySummary.textContent = `本次最突出的维度是“${strongest.label}”，相对需要补充的是“${growth.label}”。分数用于比较本次答案中的相对倾向，不代表能力高低。`;
+}
+
+function renderEvidence(items) {
+  if (!items.length) {
+    elements.evidenceList.innerHTML = `
+      <article class="evidence-item">
+        <p class="evidence-item__module">结果说明</p>
+        <h3>这份旧结果没有保存逐题依据</h3>
+        <p>重新完成测试后，这里会显示对人物匹配影响最大的三处选择。</p>
+      </article>
+    `;
+    return;
+  }
+
+  elements.evidenceList.innerHTML = items.map((item, index) => `
+    <article class="evidence-item">
+      <p class="evidence-item__module">${String(index + 1).padStart(2, "0")} · ${escapeHtml(item.module)}</p>
+      <h3>${escapeHtml(item.answer)}</h3>
+      <p>${escapeHtml(item.interpretation)}</p>
+      <details>
+        <summary>查看对应题目</summary>
+        <p>${escapeHtml(item.question)}</p>
+      </details>
+    </article>
+  `).join("");
+}
+
+function renderAdvice(items, abilities) {
+  const fallbackAbilities = [...abilities].sort((left, right) => Number(right.value) - Number(left.value));
+  const fallback = [
+    { title: "发挥优势", text: `继续使用“${fallbackAbilities[0]?.label || "优势维度"}”，但把它留给真正重要的事情。` },
+    { title: "保持平衡", text: "优势持续用得过满也会带来消耗，给自己保留恢复和调整的空间。" },
+    { title: "试试这样做", text: `为“${fallbackAbilities.at(-1)?.label || "成长维度"}”设置一个一周内能完成的小练习。` }
+  ];
+  const adviceItems = items.length ? items : fallback;
+
+  elements.adviceList.innerHTML = adviceItems.map((item, index) => `
+    <article class="advice-item">
+      <span class="advice-item__number">${String(index + 1).padStart(2, "0")}</span>
+      <h3>${escapeHtml(item.title)}</h3>
+      <p>${escapeHtml(item.text)}</p>
     </article>
   `).join("");
 }
@@ -398,7 +460,7 @@ function renderRadar(abilities) {
   elements.radarAxis.innerHTML = geometry.axes.map((axis) => `
     <g>
       <line class="radar-axis-line" x1="${geometry.centerX}" y1="${geometry.centerY}" x2="${axis.x}" y2="${axis.y}"></line>
-      <text class="radar-axis-label" x="${axis.labelX}" y="${axis.labelY}">${axis.ability.label}</text>
+      <text class="radar-axis-label" x="${axis.labelX}" y="${axis.labelY}">${escapeHtml(axis.ability.label)}</text>
     </g>
   `).join("");
 
@@ -513,6 +575,7 @@ function handleQuizPrev() {
   state.session.currentQuestionIndex = Math.max(0, getCurrentQuestionIndex() - 1);
   persistSession();
   render();
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function handleQuizNext() {
@@ -590,13 +653,21 @@ function handleOptionSelection(questionId, optionId) {
   state.session.updatedAt = new Date().toISOString();
   persistSession();
 
-  if (getCurrentQuestionIndex() < state.data.questions.length - 1) {
+  const advancesToNextQuestion = getCurrentQuestionIndex() < state.data.questions.length - 1;
+
+  if (advancesToNextQuestion) {
     state.session.currentQuestionIndex += 1;
     state.session.updatedAt = new Date().toISOString();
     persistSession();
   }
 
   render();
+
+  if (advancesToNextQuestion) {
+    window.scrollTo({ top: 0, behavior: "instant" });
+  } else {
+    elements.quizNext.scrollIntoView({ behavior: "instant", block: "nearest" });
+  }
 }
 
 function finalizeResult() {
@@ -624,253 +695,28 @@ function ensureResultSnapshot() {
 }
 
 function buildResultSnapshot() {
-  const scores = computeAxisScores(state.session.answers);
-  const mbti64Type = buildMbti64Type(scores);
-  const typeConfig = state.data.typesByMbti64[mbti64Type];
-  const resultId = pickResultId(typeConfig, state.session.mode, state.session.answers);
-  const resultConfig = state.data.resultsById[resultId];
-  const abilities = buildAbilities(scores);
-  const keywords = [
-    resultConfig.keyword_1,
-    resultConfig.keyword_2,
-    resultConfig.keyword_3,
-    resultConfig.keyword_4
-  ].filter(Boolean);
-  const similarity = computeSimilarity(scores);
-  const topAbility = [...abilities].sort((a, b) => b.value - a.value)[0];
-  const lowestAbility = [...abilities].sort((a, b) => a.value - b.value)[0];
-  const sharedSkeleton = trimSentence(typeConfig.shared_skeleton);
-
-  return {
-    resultId,
-    mbti64Type,
-    personName: resultConfig.person_name,
-    resultTitle: resultConfig.result_title,
-    similarity,
-    scoreCaption: similarity >= 90 ? "极高命中区间" : similarity >= 75 ? "高命中区间" : "自然贴近区间",
-    keywords,
-    whyLike: resultConfig.why_like,
-    profileSummary: `${resultConfig.profile_summary} 放到你身上，更像一种“${sharedSkeleton}”的任务气质。`,
-    archetypeNote: `你给人的感觉，是那种${sharedSkeleton}的人。尤其在“${topAbility.label}”这件事上，很容易让人觉得你和 ${resultConfig.person_name} 有同一种底色。`,
-    shareBlurb: `你的关键词会落在 ${keywords.slice(0, 3).join("、")} 这一条线上，看起来不是表面相似，而是做事底色很像。`,
-    currentPerformance: `最近你更容易在“${topAbility.label}”上被看见。${topAbility.shortLine} 所以无论是处理关系、推进事情，还是面对临场变化，你都会自然带出一种 ${keywords.slice(0, 2).join("、")} 的感觉。`,
-    currentState: deriveCurrentState(typeConfig, scores),
-    lifeAdvice: `发挥优势的方式，不是一直把自己绷在最会做的那个位置上，而是把“${topAbility.label}”真正用到重要的事情上。试试这样做：继续保留你在“${topAbility.label}”上的强项，同时给“${lowestAbility.label}”留一点缓冲空间，别急着一次做到最满，反而更容易把整个人的状态调顺。`,
-    abilities
-  };
-}
-
-function computeAxisScores(answerMap) {
-  const totals = {
-    E: 0, I: 0, N: 0, S: 0, T: 0, F: 0,
-    J: 0, P: 0, O: 0, A: 0, H: 0, C: 0
-  };
-
-  Object.entries(answerMap).forEach(([questionId, optionId]) => {
-    const option = (state.data.optionsByQuestion[questionId] || []).find((entry) => entry.option_id === optionId);
-
-    if (!option) {
-      return;
-    }
-
-    Object.keys(totals).forEach((axis) => {
-      totals[axis] += Number(option[`weighted_${axis}`] || 0);
-    });
+  return buildAssessmentResult({
+    data: state.data,
+    answers: state.session.answers,
+    mode: state.session.mode
   });
-
-  return totals;
-}
-
-function buildMbti64Type(scores) {
-  const tiePreference = {
-    EI: "I",
-    NS: "N",
-    TF: "F",
-    JP: "J",
-    OA: "O",
-    HC: "C"
-  };
-
-  const pick = (left, right, pairKey) => {
-    if (scores[left] > scores[right]) {
-      return left;
-    }
-
-    if (scores[left] < scores[right]) {
-      return right;
-    }
-
-    return tiePreference[pairKey];
-  };
-
-  const type16 = [
-    pick("E", "I", "EI"),
-    pick("N", "S", "NS"),
-    pick("T", "F", "TF"),
-    pick("J", "P", "JP")
-  ].join("");
-
-  return `${type16}-${pick("O", "A", "OA")}-${pick("H", "C", "HC")}`;
-}
-
-function pickResultId(typeConfig, mode, answers) {
-  if (mode === "male") {
-    return typeConfig.male_result_id;
-  }
-
-  if (mode === "female") {
-    return typeConfig.female_result_id;
-  }
-
-  const pool = (typeConfig.random_pool_result_ids || "")
-    .split("|")
-    .filter(Boolean);
-  const hashSeed = `${typeConfig.type_id}|${state.session.passwordCode}|${Object.values(answers).join("|")}`;
-  const index = Math.abs(hashString(hashSeed)) % pool.length;
-  return pool[index];
-}
-
-function buildAbilities(scores) {
-  const ratios = {
-    feeling: ratio(scores.F, scores.T),
-    logic: ratio(scores.T, scores.F),
-    warm: ratio(scores.H, scores.C),
-    cool: ratio(scores.C, scores.H),
-    intro: ratio(scores.I, scores.E),
-    extro: ratio(scores.E, scores.I),
-    explore: ratio(scores.N, scores.S),
-    grounded: ratio(scores.S, scores.N),
-    order: ratio(scores.J, scores.P),
-    observe: ratio(scores.O, scores.A),
-    action: ratio(scores.A, scores.O)
-  };
-
-  const values = {
-    people: scaleAbility(0.48 * ratios.feeling + 0.32 * ratios.warm + 0.2 * ratios.intro),
-    judgment: scaleAbility(0.42 * ratios.cool + 0.33 * ratios.logic + 0.25 * ratios.order),
-    execution: scaleAbility(0.38 * ratios.action + 0.34 * ratios.order + 0.28 * ratios.extro),
-    stability: scaleAbility(0.38 * ratios.cool + 0.24 * ratios.grounded + 0.2 * ratios.intro + 0.18 * ratios.order),
-    growth: scaleAbility(0.34 * ratios.explore + 0.25 * ratios.observe + 0.23 * ratios.order + 0.18 * ratios.action)
-  };
-
-  return [
-    createAbility("人际感应", values.people, "warm", {
-      high: "你很会先读空气、读关系，再决定自己该怎么靠近和推进。",
-      mid: "你会一边感受场上的人，一边调整自己的表达方式。",
-      low: "你不是不会感受别人，而是更习惯先把重点和边界想清楚。"
-    }),
-    createAbility("判断主心", values.judgment, "deep", {
-      high: "你做判断时很少只看表面，心里通常有一条自己的主线。",
-      mid: "你会先衡量轻重和结构，再决定事情该怎样落下去。",
-      low: "你并非没有判断，而是更容易在多种可能之间先保留弹性。"
-    }),
-    createAbility("推进执行", values.execution, "warm", {
-      high: "只要认定值得做，你就会很自然地开始带节奏、抓推进。",
-      mid: "你推进事情时更像稳稳往前，不一定张扬，但会持续动起来。",
-      low: "你不太吃爆发式推进，更适合按自己的节奏把事情一点点做成。"
-    }),
-    createAbility("压力定力", values.stability, "deep", {
-      high: "一旦环境变乱，你反而会更快切到稳定和清醒的处理方式。",
-      mid: "面对压力时，你通常会先把自己收住，再慢慢把局面理顺。",
-      low: "压力来的时候你会先感受到波动，但只要给你一点缓冲，还是能慢慢稳回来。"
-    }),
-    createAbility("长线生长", values.growth, "warm", {
-      high: "你很在意一件事后面能不能继续长、继续积累，而不是只看眼前。",
-      mid: "你会自然去想这件事能否留下来、沉下去、变成长期价值。",
-      low: "你不是没有远线感，而是更容易先被当下变化牵动，再慢慢回到长期。"
-    })
-  ];
-}
-
-function createAbility(label, value, tone, lines) {
-  let description = lines.low;
-
-  if (value >= 90) {
-    description = lines.high;
-  } else if (value >= 82) {
-    description = lines.mid;
-  }
-
-  const extraLine = value >= 90
-    ? "这会让你在关键时刻显得很有辨识度。"
-    : value >= 82
-      ? "所以别人常会觉得你做事有自己的稳定节奏。"
-      : "也因此你更适合在顺手的场域里慢慢发挥。";
-
-  return {
-    label,
-    value,
-    tone,
-    shortLine: description,
-    description: `${description}${extraLine}`
-  };
-}
-
-function deriveCurrentState(typeConfig, scores) {
-  const oaText = typeConfig.axis_oa === "O"
-    ? "你现在更像在先观察、先体会，再决定什么时候真正出手。"
-    : "你现在更像在边想边动，很多判断会在行动里慢慢长出来。";
-
-  const hcText = typeConfig.axis_hc === "H"
-    ? "你对关系温度和场面气氛会比较敏感，环境一变，你很快就能感觉到。"
-    : "你对边界、分寸和结构会更敏感，所以现在会本能地想把很多事情先理顺。";
-
-  const eiText = scores.I >= scores.E
-    ? "这段时间你也更需要自己的节奏感，不太适合一直被外界拉着跑。"
-    : "这段时间你更容易靠互动、反馈和行动感来校准自己。";
-
-  return `${oaText}${hcText}${eiText}`;
-}
-
-function computeSimilarity(scores) {
-  const margins = [
-    axisMargin(scores.E, scores.I),
-    axisMargin(scores.N, scores.S),
-    axisMargin(scores.T, scores.F),
-    axisMargin(scores.J, scores.P),
-    axisMargin(scores.O, scores.A),
-    axisMargin(scores.H, scores.C)
-  ];
-
-  const average = margins.reduce((sum, item) => sum + item, 0) / margins.length;
-  return clamp(50 + Math.round(average * 49), 50, 99);
-}
-
-function axisMargin(left, right) {
-  const total = left + right;
-  return total <= 0 ? 0.5 : Math.abs(left - right) / total;
-}
-
-function ratio(left, right) {
-  const total = left + right;
-  return total <= 0 ? 0.5 : left / total;
-}
-
-function scaleAbility(value) {
-  return 70 + Math.round(clamp(value, 0, 1) * 25);
 }
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
 }
 
-function hashString(value) {
-  let hash = 0;
-
-  for (let index = 0; index < value.length; index += 1) {
-    hash = ((hash << 5) - hash) + value.charCodeAt(index);
-    hash |= 0;
-  }
-
-  return hash;
-}
-
-function trimSentence(value) {
-  return String(value || "").replace(/[。！？!?]+$/g, "");
-}
-
 function sanitizePassword(value) {
   return passwordService.normalizePassword(value);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function getCurrentQuestionIndex() {
@@ -886,6 +732,7 @@ function persistSession() {
 function setScreen(screenName) {
   state.screen = screenName;
   render();
+  window.scrollTo({ top: 0, behavior: "instant" });
 }
 
 function showToast(message) {

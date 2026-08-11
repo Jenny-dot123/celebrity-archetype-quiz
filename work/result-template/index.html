@@ -4,7 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>你跟哪个名人有缘</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="./styles.css?v=20260811-release-b">
 </head>
 <body>
   <div class="ambient ambient--left" aria-hidden="true"></div>
@@ -70,29 +71,19 @@
       <section class="screen" data-screen="mode" aria-labelledby="mode-title">
         <div class="stage-card">
           <p class="section-kicker">选择方向</p>
-          <h2 id="mode-title">先选这次想看的名人方向</h2>
-          <p class="stage-copy">
-            题目内容完全一样，区别只在最终结果的人物池。你可以只看男性名人、只看女性名人，
-            或者把最后的命中交给随机。
-          </p>
+          <h2 id="mode-title">请选择测试方向</h2>
 
           <div class="mode-grid">
             <button class="mode-card" data-mode="male" type="button">
-              <span class="mode-card__tag">方向一</span>
               <strong>匹配男性名人</strong>
-              <p>适合想看看自己更像哪一位男性人物原型，结果只会从男性池里命中。</p>
             </button>
 
             <button class="mode-card" data-mode="female" type="button">
-              <span class="mode-card__tag">方向二</span>
               <strong>匹配女性名人</strong>
-              <p>适合想看看自己更像哪一位女性人物原型，结果只会从女性池里命中。</p>
             </button>
 
             <button class="mode-card" data-mode="random" type="button">
-              <span class="mode-card__tag">方向三</span>
               <strong>随机匹配名人</strong>
-              <p>适合想保留一点惊喜感，让系统从这一型的完整人物池里替你命中结果。</p>
             </button>
           </div>
 
@@ -125,132 +116,118 @@
         </div>
       </section>
 
-      <section class="screen" data-screen="result" aria-labelledby="result-title">
-        <section class="result-card">
-          <div class="result-card__intro">
-            <span class="result-badge">结果已生成</span>
-            <p class="result-kicker">你跟哪个名人有缘</p>
+      <section class="screen result-screen" data-screen="result" aria-labelledby="result-title">
+        <article class="result-report">
+          <header class="report-cover">
+            <p class="report-cover__label">人物原型档案</p>
             <h1 id="result-title">你的名人原型</h1>
-            <p class="result-lead" id="archetype-note"></p>
-          </div>
+            <p class="report-cover__name" id="person-name"></p>
+            <p class="report-cover__note" id="archetype-note"></p>
 
-          <div class="hero-grid hero-grid--result">
-            <section class="score-card" aria-label="相似指数">
-              <p class="score-card__label">相似指数</p>
-              <div class="score-card__number" id="similarity">92%</div>
-              <p class="score-card__caption" id="score-caption"></p>
-              <div class="score-card__orbit" aria-hidden="true">
-                <span></span>
-                <span></span>
-              </div>
-            </section>
-
-            <section class="identity-card" aria-label="对应名人信息">
-              <p class="section-kicker">对应人物</p>
-              <h2 id="person-name"></h2>
-              <p class="identity-card__summary" id="share-blurb"></p>
-              <div class="keyword-list" id="keyword-list"></div>
-            </section>
-          </div>
-
-          <section class="ability-board" aria-labelledby="ability-title">
-            <div class="ability-board__head">
+            <div class="report-match" aria-label="相似指数">
+              <div class="report-match__score" id="similarity">--%</div>
               <div>
-                <p class="section-kicker">能力结构</p>
-                <h2 id="ability-title">你的做事方式五维图</h2>
+                <p class="report-match__label">本次相似指数</p>
+                <p class="report-match__caption" id="score-caption"></p>
               </div>
-              <p class="ability-board__desc">
-                这一块更像把你的做事气质拆开看，方便解释你为什么会像这个人物。
-              </p>
             </div>
 
-            <div class="ability-board__grid">
-              <div class="radar-card">
+            <p class="report-cover__method" id="share-blurb"></p>
+            <div class="keyword-list" id="keyword-list" aria-label="人物关键词"></div>
+          </header>
+
+          <section class="report-section" aria-labelledby="portrait-title">
+            <div class="report-section__head">
+              <span class="report-section__number">01</span>
+              <h2 id="portrait-title">人物画像</h2>
+            </div>
+            <div class="portrait-copy">
+              <p class="portrait-copy__lead" id="why-like"></p>
+              <div class="portrait-copy__divider" aria-hidden="true"></div>
+              <div>
+                <h3>人物小传总结</h3>
+                <p id="profile-summary"></p>
+              </div>
+            </div>
+          </section>
+
+          <section class="report-section" aria-labelledby="ability-title">
+            <div class="report-section__head">
+              <span class="report-section__number">02</span>
+              <h2 id="ability-title">能力结构</h2>
+            </div>
+
+            <div class="ability-spectrum">
+              <div class="ability-spectrum__chart">
+                <p class="ability-spectrum__title">你的五维行为光谱</p>
                 <svg class="radar-chart" id="radar-chart" viewBox="0 0 420 360" aria-label="能力结构五维图">
                   <g id="radar-grid"></g>
                   <g id="radar-axis"></g>
                   <polygon id="radar-shape" points=""></polygon>
                   <g id="radar-points"></g>
                 </svg>
+                <p class="ability-spectrum__summary" id="ability-summary"></p>
               </div>
 
-              <div class="ability-legend" id="ability-legend"></div>
+              <div class="ability-list" id="ability-legend"></div>
             </div>
           </section>
 
-          <div class="content-grid">
-            <article class="panel">
-              <div class="panel__head">
-                <span>01</span>
-                <h3>为什么像 TA</h3>
-              </div>
-              <p id="why-like"></p>
-            </article>
-
-            <article class="panel">
-              <div class="panel__head">
-                <span>02</span>
-                <h3>人物小传总结</h3>
-              </div>
-              <p id="profile-summary"></p>
-            </article>
-
-            <article class="panel">
-              <div class="panel__head">
-                <span>03</span>
-                <h3>当下表现</h3>
-              </div>
-              <p id="current-performance"></p>
-            </article>
-
-            <article class="panel">
-              <div class="panel__head">
-                <span>04</span>
-                <h3>当前状态</h3>
-              </div>
-              <p id="current-state"></p>
-            </article>
-
-            <article class="panel panel--wide">
-              <div class="panel__head">
-                <span>05</span>
-                <h3>人生建议</h3>
-              </div>
-              <p id="life-advice"></p>
-            </article>
-          </div>
-
-          <section class="share-zone" aria-label="分享与跳转">
-            <div class="share-zone__copy">
-              <div class="share-zone__ornament" aria-hidden="true">
-                <span></span>
-                <span></span>
-                <span></span>
-              </div>
-              <p class="section-kicker">写在最后</p>
-              <h3 class="share-zone__title">这一页可以分享，但他人只能看到你的最终结果。</h3>
-              <p class="share-zone__body">
-                如果对方想自己测试，仍然必须重新输入一个新的有效密码，不能从你的结果页直接进入测试。
-              </p>
-              <div class="share-zone__closing-line" aria-hidden="true"></div>
+          <section class="report-section" aria-labelledby="evidence-title">
+            <div class="report-section__head">
+              <span class="report-section__number">03</span>
+              <h2 id="evidence-title">这次匹配的答案依据</h2>
             </div>
+            <p class="report-section__intro">以下三处选择对人物匹配影响最大，它们分别反映了你的关系方式、压力反应或长期取向。</p>
+            <div class="evidence-list" id="evidence-list"></div>
+          </section>
 
-            <div class="share-zone__actions">
-              <button class="action-button action-button--primary" id="share-copy" type="button">复制分享文案</button>
-              <button class="action-button" id="share-poster" type="button">生成分享图位</button>
+          <section class="report-section" aria-labelledby="reality-title">
+            <div class="report-section__head">
+              <span class="report-section__number">04</span>
+              <h2 id="reality-title">现实表现</h2>
+            </div>
+            <div class="reality-grid">
+              <article>
+                <h3>你通常如何做事</h3>
+                <p id="current-performance"></p>
+              </article>
+              <article>
+                <h3>你目前更需要留意什么</h3>
+                <p id="current-state"></p>
+              </article>
+            </div>
+          </section>
+
+          <section class="report-section" aria-labelledby="advice-title">
+            <div class="report-section__head">
+              <span class="report-section__number">05</span>
+              <h2 id="advice-title">人生建议</h2>
+            </div>
+            <div class="advice-list" id="advice-list"></div>
+            <p class="advice-summary" id="life-advice"></p>
+          </section>
+
+          <footer class="report-ending" aria-label="分享与测试说明">
+            <p class="report-ending__label">写在最后</p>
+            <h2>这一页可以分享，但他人只能看到你的最终结果。</h2>
+            <p>如果对方想自己测试，仍然必须重新输入一个新的有效密码，不能从你的结果页直接进入测试。</p>
+            <p class="report-ending__disclaimer">本测试用于人格原型探索与娱乐参考，不替代专业心理测评或心理诊断。</p>
+            <div class="report-ending__actions">
+              <button class="action-button action-button--primary" id="share-copy" type="button">复制结果与分享链接</button>
               <button class="action-button" id="share-restart" type="button">回到密码入口</button>
             </div>
-          </section>
-        </section>
+          </footer>
+        </article>
       </section>
     </section>
   </main>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="./data.js"></script>
-  <script src="./deployment-config.js"></script>
-  <script src="./supabase-app-config.js"></script>
-  <script type="module" src="./app.js"></script>
+  <script src="./data.js?v=20260811-release-b"></script>
+  <script src="./deployment-config.js?v=20260811-release-b"></script>
+  <script src="./supabase-app-config.js?v=20260811-release-b"></script>
+  <script type="module" src="./app.js?v=20260811-release-b"></script>
 </body>
 </html>
