@@ -1,5 +1,5 @@
-import * as passwordService from "./password-store.js?v=20260811-release-b";
-import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260811-release-b";
+import * as passwordService from "./password-store.js?v=20260811-release-c";
+import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260811-release-c";
 const STORAGE_KEYS = passwordService.STORAGE_KEYS;
 
 const SHARE_QUERY_KEY = "share";
