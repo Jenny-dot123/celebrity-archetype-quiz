@@ -1,12 +1,14 @@
 import * as passwordService from "./password-store.js?v=20260811-release-d";
 import {
-  ensureQuizAuthSession,
   getAdminStatus,
+  getSignedInUser,
   getSupabaseConfig,
   getSupabaseSetupMessage,
   isSupabaseConfigured,
-  isSupabaseSupportedEnvironment
-} from "./supabase-service.js?v=20260811-release-d";
+  isSupabaseSupportedEnvironment,
+  signInAdminWithPassword,
+  signOutCurrentUser
+} from "./supabase-service.js?v=20260812-mobile-admin";
 
 const testEntryUrl = new URL("./index.html?v=20260811-release-d", window.location.href).toString();
 
@@ -31,8 +33,10 @@ const elements = {
   authEmail: document.getElementById("auth-email"),
   authHint: document.getElementById("auth-hint"),
   authProject: document.getElementById("auth-project"),
+  loginForm: document.getElementById("admin-login-form"),
+  adminEmailInput: document.getElementById("admin-email"),
+  adminPasswordInput: document.getElementById("admin-password"),
   authSignIn: document.getElementById("auth-sign-in"),
-  authClaim: document.getElementById("auth-claim"),
   authSignOut: document.getElementById("auth-sign-out"),
   guideList: document.getElementById("admin-guide-list")
 };
@@ -42,8 +46,7 @@ const state = {
   latestEntry: null,
   currentUser: null,
   isAdmin: false,
-  adminClaimed: false,
-  claimedByCurrentUser: false,
+  isSigningIn: false,
   isGenerating: false,
   toastTimer: null
 };
@@ -62,9 +65,8 @@ function bindEvents() {
   elements.openTestEntry.addEventListener("click", () => {
     window.open(testEntryUrl, "_blank", "noopener");
   });
-  elements.authSignIn.addEventListener("click", handleAdminSignIn);
-  elements.authClaim.addEventListener("click", handleClaimAdmin);
-  elements.authSignOut.addEventListener("click", handleDoNotSignOut);
+  elements.loginForm.addEventListener("submit", handleAdminSignIn);
+  elements.authSignOut.addEventListener("click", handleAdminSignOut);
 }
 
 async function init() {
@@ -82,8 +84,8 @@ async function init() {
   elements.authProject.textContent = config.projectLabel || "未填写";
 
   try {
-    const user = await ensureQuizAuthSession();
-    const adminStatus = await getAdminStatus();
+    const user = await getSignedInUser();
+    const adminStatus = user ? await getAdminStatus() : null;
     applyAdminStatus(user, adminStatus);
     renderAuthCard();
 
@@ -96,19 +98,16 @@ async function init() {
     }
   } catch (error) {
     elements.authState.textContent = "进入失败";
-    elements.authEmail.textContent = "还没有建立管理身份";
-    elements.authHint.textContent = getFriendlyError(error, "匿名身份创建失败，请稍后再试。");
+    elements.authEmail.textContent = "还没有登录管理员账号";
+    elements.authHint.textContent = getFriendlyError(error, "管理员登录状态读取失败，请稍后再试。");
     elements.authSignIn.disabled = false;
-    elements.authClaim.disabled = true;
     elements.authSignOut.disabled = true;
   }
 }
 
 function applyAdminStatus(user, adminStatus) {
   state.currentUser = user || null;
-  state.isAdmin = Boolean(adminStatus.isAdmin);
-  state.adminClaimed = Boolean(adminStatus.adminClaimed);
-  state.claimedByCurrentUser = Boolean(adminStatus.claimedByCurrentUser);
+  state.isAdmin = Boolean(adminStatus?.isAdmin);
 }
 
 function renderStaticShell() {
@@ -123,6 +122,7 @@ function renderStaticShell() {
     elements.authState.textContent = "静态模式";
     elements.authEmail.textContent = "当前不需要管理员登录";
     elements.authHint.textContent = "这只适合本机演示，不适合正式发码。";
+    elements.loginForm.hidden = true;
     elements.guideList.innerHTML = [
       "1. 点击“生成一个新密码”。",
       "2. 打开测试入口，输入刚生成的密码。",
@@ -134,17 +134,16 @@ function renderStaticShell() {
   elements.copySendText.textContent = "复制发送文案";
   elements.adminLead.textContent = "以后每次发测试链接前，先在这里生成一个新的专属密码。别人拿到你发出的密码后，才可以进入测试。";
   elements.adminHelper.textContent = "这个正式版会把密码保存到 Supabase。密码首次验证成功后，会自动绑定到对方当前浏览器；只有看到结果页后，密码才会正式作废。";
-  elements.adminModeNote.textContent = "请尽量固定在同一设备、同一浏览器里管理发码，不要随意退出管理员身份。";
+  elements.adminModeNote.textContent = "手机和电脑可以使用同一个 QQ 邮箱管理员账号登录，密码记录会保持同步。";
   elements.adminListNote.textContent = "别人即使看到了结果页，也只能看结果，不能直接进入测试。";
   elements.generatePassword.disabled = true;
   elements.copyLatestPassword.disabled = true;
   elements.copySendText.disabled = true;
   elements.authSignIn.disabled = false;
-  elements.authClaim.disabled = true;
   elements.guideList.innerHTML = [
-    "1. 第一次打开时，先建立匿名身份。",
-    "2. 如果这是你的第一次初始化，点“领取管理员身份”。",
-    "3. 生成新密码后，把测试入口和密码一起发给对方。"
+    "1. 使用已授权的 QQ 邮箱和管理员密码登录。",
+    "2. 点击“生成一个新密码”，确认它出现在最新密码区域。",
+    "3. 点击“复制发送文案”，直接发给这次的测试者。"
   ].map((item) => `<li>${item}</li>`).join("");
 }
 
@@ -157,7 +156,6 @@ function renderRemoteSetupState() {
   elements.copyLatestPassword.disabled = true;
   elements.copySendText.disabled = true;
   elements.authSignIn.disabled = !isSupabaseConfigured() || !isSupabaseSupportedEnvironment();
-  elements.authClaim.disabled = true;
   renderLatest(null);
   renderStats([]);
   elements.passwordList.innerHTML = `
@@ -175,33 +173,24 @@ function renderAuthCard() {
 
   if (state.isAdmin) {
     elements.authState.textContent = "管理员已就绪";
-    elements.authEmail.textContent = "当前浏览器已经绑定管理员身份";
-    elements.authHint.textContent = "现在可以直接生成新的正式测试密码。后续请尽量固定在这个浏览器里发码。";
-    elements.authSignIn.disabled = false;
-    elements.authClaim.disabled = true;
+    elements.authEmail.textContent = state.currentUser?.email || "管理员账号";
+    elements.authHint.textContent = "账号已验证。你可以在手机或电脑上生成并复制最新的一次性密码。";
+    elements.loginForm.hidden = true;
+    elements.authSignOut.style.display = "block";
     elements.generatePassword.disabled = false;
     elements.copyLatestPassword.disabled = false;
     elements.copySendText.disabled = false;
     return;
   }
 
-  if (!state.adminClaimed) {
-    elements.authState.textContent = "待领取";
-    elements.authEmail.textContent = "当前浏览器已经建立匿名身份";
-    elements.authHint.textContent = "这个项目还没有管理员。请先点击“领取管理员身份”，后面这个浏览器就是你的正式发码后台。";
-    elements.authSignIn.disabled = false;
-    elements.authClaim.disabled = false;
-    elements.generatePassword.disabled = true;
-    elements.copyLatestPassword.disabled = true;
-    elements.copySendText.disabled = true;
-    return;
-  }
-
-  elements.authState.textContent = "已被占用";
-  elements.authEmail.textContent = "管理员身份已在别的浏览器领取";
-  elements.authHint.textContent = "当前浏览器不能继续发码。请回到你最初领取管理员身份的那个浏览器。";
+  elements.authState.textContent = state.currentUser ? "无管理员权限" : "等待登录";
+  elements.authEmail.textContent = state.currentUser?.email || "使用你的 QQ 邮箱登录";
+  elements.authHint.textContent = state.currentUser
+    ? "这个账号已经登录，但尚未被授权为管理员。请先完成一次管理员迁移设置。"
+    : "手机和电脑都使用同一个账号。管理员密码只由你自己保管，不会写入网页。";
+  elements.loginForm.hidden = false;
+  elements.authSignOut.style.display = state.currentUser ? "block" : "none";
   elements.authSignIn.disabled = false;
-  elements.authClaim.disabled = true;
   elements.generatePassword.disabled = true;
   elements.copyLatestPassword.disabled = true;
   elements.copySendText.disabled = true;
@@ -211,43 +200,58 @@ function renderLockedList() {
   elements.passwordList.innerHTML = `
     <div class="password-empty">
       <p class="password-empty__title">需要管理员权限</p>
-      <p class="helper-text">先在这个浏览器领取管理员身份，或回到你最初领取管理员身份的那个浏览器继续发码。</p>
+      <p class="helper-text">请先使用已授权的 QQ 邮箱登录密码管理页。</p>
     </div>
   `;
 }
 
-async function handleAdminSignIn() {
+async function handleAdminSignIn(event) {
+  event.preventDefault();
+
+  if (state.isSigningIn) {
+    return;
+  }
+
+  state.isSigningIn = true;
+  elements.authSignIn.disabled = true;
+
   try {
-    const user = await ensureQuizAuthSession();
+    const user = await signInAdminWithPassword(
+      elements.adminEmailInput.value,
+      elements.adminPasswordInput.value
+    );
     const adminStatus = await getAdminStatus();
     applyAdminStatus(user, adminStatus);
     renderAuthCard();
 
     if (state.isAdmin) {
+      elements.adminPasswordInput.value = "";
       await refreshEntries();
+      showToast("管理员登录成功");
+    } else {
+      renderLockedList();
+      showToast("该 QQ 邮箱尚未获得管理员权限");
     }
-
-    showToast("匿名身份已就绪");
   } catch (error) {
-    showToast(getFriendlyError(error, "匿名身份创建失败，请稍后再试。"));
+    showToast(getFriendlyError(error, "登录失败，请检查 QQ 邮箱和管理员密码。"));
+  } finally {
+    state.isSigningIn = false;
+    elements.authSignIn.disabled = false;
   }
 }
 
-async function handleClaimAdmin() {
+async function handleAdminSignOut() {
   try {
-    await passwordService.claimAdminAccess();
-    const adminStatus = await getAdminStatus();
-    applyAdminStatus(state.currentUser, adminStatus);
+    await signOutCurrentUser();
+    applyAdminStatus(null, null);
     renderAuthCard();
-    await refreshEntries();
-    showToast("管理员身份领取成功");
+    renderLatest(null);
+    renderStats([]);
+    renderLockedList();
+    showToast("已退出管理员账号");
   } catch (error) {
-    showToast(getFriendlyError(error, "领取管理员身份失败。"));
+    showToast(getFriendlyError(error, "退出失败，请稍后再试。"));
   }
-}
-
-function handleDoNotSignOut() {
-  showToast("正式版不建议退出管理员身份，请固定在当前浏览器继续管理发码。");
 }
 
 async function handleGeneratePassword() {
@@ -336,7 +340,7 @@ function renderLatest(entry) {
   if (!entry) {
     elements.latestPassword.textContent = "尚未生成";
     elements.latestMeta.textContent = passwordService.isRemoteMode()
-      ? "领取管理员身份后，点击上方按钮生成新的正式测试密码。"
+      ? "登录管理员账号后，点击上方按钮生成新的正式测试密码。"
       : "点击上方按钮后，这里会显示刚生成的新密码。";
     return;
   }

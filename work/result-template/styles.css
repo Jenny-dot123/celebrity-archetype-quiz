@@ -1038,6 +1038,25 @@ h2 {
   line-height: 1.5;
 }
 
+.admin-login-form {
+  display: grid;
+  gap: 0.72rem;
+}
+
+.admin-login-form .field-label {
+  margin: 0;
+}
+
+.admin-login-form .text-input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.admin-login-form[hidden] {
+  display: none;
+}
+
 .setup-list {
   margin: 0;
   padding-left: 1.1rem;

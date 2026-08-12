@@ -292,13 +292,13 @@ async function requireAdminUser() {
   const user = await getCurrentUser();
 
   if (!user) {
-    throw new Error("请先在密码管理页建立管理员身份。");
+    throw new Error("请先在密码管理页登录管理员账号。");
   }
 
   const isAdmin = await isCurrentUserAdmin(user.id);
 
   if (!isAdmin) {
-    throw new Error("当前浏览器还没有管理员权限，请先在密码管理页领取管理员身份。");
+    throw new Error("当前账号没有管理员权限，请确认使用的是已授权的 QQ 邮箱。");
   }
 
   return user;
