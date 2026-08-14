@@ -1,14 +1,14 @@
-import * as passwordService from "./password-store.js?v=20260811-release-d";
-import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260811-release-d";
-const STORAGE_KEYS = passwordService.STORAGE_KEYS;
+import { buildAssessmentResult } from "./matching-engine-v2.js?v=20260814-free-access";
+
+const STORAGE_KEYS = {
+  session: "celeb_quiz_session_v1"
+};
 
 const SHARE_QUERY_KEY = "share";
 
 const state = {
   data: prepareData(window.CELEB_QUIZ_DATA),
-  deviceId: initDeviceId(),
   session: loadJson(STORAGE_KEYS.session, null),
-  passwordStore: initPasswordStore(),
   sharedSnapshot: loadSharedSnapshot(),
   sharedView: false,
   screen: "cover",
@@ -16,7 +16,6 @@ const state = {
 };
 
 state.sharedView = Boolean(state.sharedSnapshot);
-reconcileSessionWithPasswordStore();
 
 const elements = {
   screens: Array.from(document.querySelectorAll(".screen")),
@@ -25,11 +24,6 @@ const elements = {
   progressFill: document.getElementById("progress-fill"),
   coverStart: document.getElementById("cover-start"),
   coverHelper: document.getElementById("cover-helper"),
-  passwordCopy: document.getElementById("password-copy"),
-  passwordInput: document.getElementById("password-input"),
-  passwordSubmit: document.getElementById("password-submit"),
-  passwordBack: document.getElementById("password-back"),
-  passwordStatus: document.getElementById("password-status"),
   modeCards: Array.from(document.querySelectorAll(".mode-card")),
   modeBack: document.getElementById("mode-back"),
   quizModule: document.getElementById("quiz-module"),
@@ -112,56 +106,24 @@ function prepareData(rawData) {
   };
 }
 
-function initDeviceId() {
-  let deviceId = localStorage.getItem(STORAGE_KEYS.deviceId);
-
-  if (!deviceId) {
-    deviceId = `device_${Math.random().toString(36).slice(2, 10)}`;
-    localStorage.setItem(STORAGE_KEYS.deviceId, deviceId);
-  }
-
-  return deviceId;
-}
-
-function initPasswordStore() {
-  return passwordService.initPasswordStore();
-}
-
 function loadJson(key, fallbackValue) {
-  return passwordService.loadJson(key, fallbackValue);
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallbackValue;
+  } catch (error) {
+    return fallbackValue;
+  }
 }
 
 function saveJson(key, value) {
-  passwordService.saveJson(key, value);
-}
-
-function reconcileSessionWithPasswordStore() {
-  if (passwordService.isRemoteMode()) {
-    return;
-  }
-
-  if (!state.session || state.session.completed || !state.session.passwordCode) {
-    return;
-  }
-
-  if (!state.passwordStore[state.session.passwordCode]) {
-    state.session = null;
-    localStorage.removeItem(STORAGE_KEYS.session);
-  }
+  localStorage.setItem(key, JSON.stringify(value));
 }
 
 function bindEvents() {
   elements.coverStart.addEventListener("click", handleCoverStart);
-  elements.passwordSubmit.addEventListener("click", handlePasswordSubmit);
-  elements.passwordBack.addEventListener("click", () => setScreen("cover"));
-  elements.modeBack.addEventListener("click", () => setScreen("password"));
+  elements.modeBack.addEventListener("click", () => setScreen("cover"));
   elements.quizPrev.addEventListener("click", handleQuizPrev);
   elements.quizNext.addEventListener("click", handleQuizNext);
-  elements.passwordInput.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") {
-      handlePasswordSubmit();
-    }
-  });
 
   elements.modeCards.forEach((card) => {
     card.addEventListener("click", () => selectMode(card.dataset.mode));
@@ -192,7 +154,7 @@ function syncScreenFromState() {
     return;
   }
 
-  if (state.session.passwordCode) {
+  if (state.session) {
     state.screen = "mode";
     return;
   }
@@ -207,7 +169,6 @@ function render() {
 
   renderProgress();
   renderCover();
-  renderPassword();
   renderMode();
 
   if (state.screen === "quiz") {
@@ -226,17 +187,14 @@ function renderProgress() {
   if (state.sharedView && state.screen === "result") {
     stage = "分享结果";
     percent = 100;
-    } else if (state.screen === "password") {
-      stage = "入口验证";
-      percent = 8;
     } else if (state.screen === "mode") {
       stage = "选择方向";
-      percent = 16;
+      percent = 10;
   } else if (state.screen === "quiz") {
     const currentIndex = getCurrentQuestionIndex();
     const currentQuestion = state.data.questions[currentIndex];
     stage = currentQuestion ? currentQuestion.module_name : "测试进行中";
-    percent = 16 + Math.round(((currentIndex + 1) / state.data.questions.length) * 74);
+    percent = 10 + Math.round(((currentIndex + 1) / state.data.questions.length) * 80);
   } else if (state.screen === "result") {
     stage = "结果完成";
     percent = 100;
@@ -249,8 +207,8 @@ function renderProgress() {
 
 function renderCover() {
   if (state.sharedView) {
-    elements.coverStart.textContent = "输入密码开始测试";
-    elements.coverHelper.textContent = "当前这条链接是分享结果页，不包含测试权限。";
+    elements.coverStart.textContent = "免费开始测试";
+    elements.coverHelper.textContent = "当前展示的是他人的分享结果，你可以重新开始一份属于自己的测试。";
     return;
   }
 
@@ -263,45 +221,13 @@ function renderCover() {
     }
 
     if (session && session.completed && session.resultSnapshot) {
-      elements.coverStart.textContent = "输入新密码开始测试";
-      elements.coverHelper.textContent = `上一次命中结果是「${session.resultSnapshot.personName}」。如果想再测一次，仍然需要新的有效密码。`;
+      elements.coverStart.textContent = "重新测试";
+      elements.coverHelper.textContent = `上一次命中结果是「${session.resultSnapshot.personName}」，也可以重新回答看看结果会怎样变化。`;
       return;
-  }
-
-  if (!passwordService.isRemoteMode()) {
-    elements.coverStart.textContent = "开始测试";
-    elements.coverHelper.textContent = "这是免费静态版：结果页可以分享，但测试密码只在当前浏览器有效，更适合你自己演示或试跑流程。";
-    return;
   }
 
   elements.coverStart.textContent = "开始测试";
-  elements.coverHelper.textContent = "结果页可以传播，但如果别人想自己测试，仍然必须输入新的有效密码。";
-}
-
-function renderPassword() {
-  if (state.screen !== "password") {
-    return;
-  }
-
-  if (!passwordService.isRemoteMode()) {
-    elements.passwordCopy.textContent = "免费版说明：请先在同一浏览器的密码管理页生成密码，再回到这里输入。这个密码不能发给别的设备直接使用。";
-  } else {
-    elements.passwordCopy.textContent = "这次测试采用一次性密码进入。首次验证成功后，会默认绑定当前设备；中途退出也可以在同一浏览器继续。只有看到结果页后，这个密码才会正式作废。";
-  }
-
-  state.passwordStore = initPasswordStore();
-
-  if (!passwordService.isRemoteMode() && !Object.keys(state.passwordStore).length) {
-    elements.passwordStatus.textContent = "当前浏览器还没有可用密码。请先打开 password-admin.html 生成一个新密码，再回来输入。";
-    return;
-  }
-
-    if (state.session && !state.session.completed && state.session.passwordCode) {
-      elements.passwordStatus.textContent = `当前浏览器已有进行中的密码记录：${state.session.passwordCode}。输入同一密码，就能继续上次的测试。`;
-      return;
-    }
-
-    elements.passwordStatus.textContent = "请输入当前仍有效的测试密码，验证成功后就可以进入下一步。";
+  elements.coverHelper.textContent = "完成24道场景题，免费找到与你最相似的名人原型。";
 }
 
 function renderMode() {
@@ -366,7 +292,7 @@ function renderResult() {
   elements.currentPerformance.textContent = snapshot.currentPerformance;
   elements.currentState.textContent = snapshot.currentState;
   elements.lifeAdvice.textContent = snapshot.lifeAdvice;
-  elements.shareRestart.textContent = state.sharedView ? "前往密码入口" : "回到密码入口";
+  elements.shareRestart.textContent = state.sharedView ? "我也测一次" : "重新测试";
 
   renderKeywords(snapshot.keywords);
   renderRadar(snapshot.abilities);
@@ -511,7 +437,9 @@ function handleCoverStart() {
     clearShareUrl();
     state.sharedView = false;
     state.sharedSnapshot = null;
-    setScreen("password");
+    state.session = createFreeSession();
+    persistSession();
+    setScreen("mode");
     return;
   }
 
@@ -525,44 +453,23 @@ function handleCoverStart() {
     return;
   }
 
-  setScreen("password");
+  state.session = createFreeSession();
+  persistSession();
+  setScreen("mode");
 }
 
-async function handlePasswordSubmit() {
-  state.passwordStore = initPasswordStore();
-  const passwordCode = sanitizePassword(elements.passwordInput.value);
+function createFreeSession() {
+  const now = new Date().toISOString();
 
-  if (!passwordCode) {
-    elements.passwordStatus.textContent = "请先输入测试密码。";
-    showToast("请先输入测试密码");
-    return;
-  }
-
-  const verification = await passwordService.verifyPassword(passwordCode, state.deviceId);
-
-  if (!verification.ok) {
-    elements.passwordStatus.textContent = verification.message;
-    showToast(verification.code === "used" ? "这个密码已作废" : verification.message);
-    return;
-  }
-
-  if (!state.session || state.session.passwordCode !== passwordCode || state.session.completed) {
-    state.session = {
-      passwordCode,
-      mode: null,
-      answers: {},
-      currentQuestionIndex: 0,
-      completed: false,
-      resultSnapshot: null,
-      startedAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-  }
-
-  state.passwordStore = initPasswordStore();
-  persistSession();
-  elements.passwordStatus.textContent = verification.message;
-  setScreen("mode");
+  return {
+    mode: null,
+    answers: {},
+    currentQuestionIndex: 0,
+    completed: false,
+    resultSnapshot: null,
+    startedAt: now,
+    updatedAt: now
+  };
 }
 
 function handleQuizPrev() {
@@ -607,7 +514,7 @@ function handleShareCopy() {
     `当前状态：${snapshot.currentState}`,
     `人生建议：${snapshot.lifeAdvice}`,
     `结果链接：${shareUrl}`,
-    "想自己测，仍然需要新的有效密码。"
+    "打开链接即可免费测试。"
   ].join("\n");
 
   navigator.clipboard.writeText(text)
@@ -620,20 +527,16 @@ function handleRestartFromResult() {
     state.sharedView = false;
     state.sharedSnapshot = null;
     clearShareUrl();
-    setScreen("password");
-    return;
   }
 
-  state.session = null;
-  localStorage.removeItem(STORAGE_KEYS.session);
-  setScreen("password");
+  state.session = createFreeSession();
+  persistSession();
+  setScreen("mode");
 }
 
 function selectMode(mode) {
-  if (!state.session) {
-    showToast("请先验证密码");
-    setScreen("password");
-    return;
+  if (!state.session || state.session.completed) {
+    state.session = createFreeSession();
   }
 
   state.session.mode = mode;
@@ -677,10 +580,6 @@ function finalizeResult() {
   state.session.completed = true;
   state.session.updatedAt = new Date().toISOString();
 
-  passwordService.markPasswordUsed(state.session.passwordCode).then(() => {
-    state.passwordStore = initPasswordStore();
-  }).catch(() => {});
-
   persistSession();
 }
 
@@ -717,10 +616,6 @@ function buildResultSnapshot() {
 
 function clamp(value, min, max) {
   return Math.min(Math.max(value, min), max);
-}
-
-function sanitizePassword(value) {
-  return passwordService.normalizePassword(value);
 }
 
 function escapeHtml(value) {

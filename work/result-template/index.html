@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>你跟哪个名人有缘</title>
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="./styles.css?v=20260811-release-d">
+  <link rel="stylesheet" href="./styles.css?v=20260814-free-access">
 </head>
 <body>
   <div class="ambient ambient--left" aria-hidden="true"></div>
@@ -38,32 +38,9 @@
                 <button class="primary-button primary-button--hero" id="cover-start" type="button">开始测试</button>
               </div>
               <p class="helper-text" id="cover-helper">
-                结果页可以传播，但如果别人想自己测试，仍然必须输入新的有效密码。
+                完成24道场景题，免费找到与你最相似的名人原型。
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="screen" data-screen="password" aria-labelledby="password-title">
-        <div class="stage-card stage-card--narrow">
-          <p class="section-kicker">测试入口</p>
-          <h2 id="password-title">输入密码，开始这次匹配</h2>
-          <p class="stage-copy" id="password-copy">
-            这次测试采用一次性密码进入。首次验证成功后，会默认绑定当前设备；
-            中途退出也可以在同一浏览器继续。只有看到结果页后，这个密码才会正式作废。
-          </p>
-
-          <label class="field-label" for="password-input">输入测试密码</label>
-          <div class="password-row">
-            <input class="text-input" id="password-input" type="text" inputmode="text" autocomplete="off" placeholder="输入测试密码">
-            <button class="primary-button" id="password-submit" type="button">验证并进入</button>
-          </div>
-
-          <p class="status-note" id="password-status"></p>
-
-          <div class="footer-actions">
-            <button class="secondary-button" id="password-back" type="button">返回首页</button>
           </div>
         </div>
       </section>
@@ -211,11 +188,11 @@
           <footer class="report-ending" aria-label="分享与测试说明">
             <p class="report-ending__label">写在最后</p>
             <h2>这一页可以分享，但他人只能看到你的最终结果。</h2>
-            <p>如果对方想自己测试，仍然必须重新输入一个新的有效密码，不能从你的结果页直接进入测试。</p>
+            <p>如果对方也想测试，可以从结果页直接开启一份属于自己的免费测试，彼此的答题记录不会混在一起。</p>
             <p class="report-ending__disclaimer">本测试用于人格原型探索与娱乐参考，不替代专业心理测评或心理诊断。</p>
             <div class="report-ending__actions">
               <button class="action-button action-button--primary" id="share-copy" type="button">复制结果与分享链接</button>
-              <button class="action-button" id="share-restart" type="button">回到密码入口</button>
+              <button class="action-button" id="share-restart" type="button">重新测试</button>
             </div>
           </footer>
         </article>
@@ -225,9 +202,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="./data.js?v=20260811-release-d"></script>
-  <script src="./deployment-config.js?v=20260811-release-d"></script>
-  <script src="./supabase-app-config.js?v=20260811-release-d"></script>
-  <script type="module" src="./app.js?v=20260811-release-d"></script>
+  <script src="./data.js?v=20260814-free-access"></script>
+  <script type="module" src="./app.js?v=20260814-free-access"></script>
 </body>
 </html>
